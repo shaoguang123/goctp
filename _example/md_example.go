@@ -48,7 +48,7 @@ func main() {
 
 	log.Printf("客户端配置: %+#v\n", CTP)
 
-	pMdSpi := goctp.NewDirectorCThostFtdcMdSpi(&goctp_api.GoCThostFtdcSpi{Client: CTP})
+	pMdSpi := goctp.NewDirectorCThostFtdcMdSpi(&goctp_api.GoCThostFtdcMdSpi{Client: CTP})
 
 	CTP.MdApi.RegisterSpi(pMdSpi)
 	CTP.MdApi.RegisterFront(CTP.MdFront)

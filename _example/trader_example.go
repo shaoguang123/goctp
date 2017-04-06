@@ -46,7 +46,7 @@ func main() {
 		TraderRequestID: 0,
 	}
 
-	pTraderSpi := goctp.NewDirectorCThostFtdcTraderSpi(&goctp_api.GoCThostFtdcSpi{Client: CTP})
+	pTraderSpi := goctp.NewDirectorCThostFtdcTraderSpi(&goctp_api.GoCThostFtdcTraderSpi{Client: CTP})
 
 	CTP.TraderApi.RegisterSpi(pTraderSpi)                         // 注册事件类
 	CTP.TraderApi.SubscribePublicTopic(1 /*THOST_TERT_RESTART*/)  // 注册公有流

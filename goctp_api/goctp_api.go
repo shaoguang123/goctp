@@ -32,23 +32,24 @@ func (g *GoCTPClient) GetTraderRequestID() int {
 	return g.TraderRequestID
 }
 
-type GoCThostFtdcSpi struct {
-	Client      GoCTPClient
+type GoCThostFtdcMdSpi struct {
+	Client GoCTPClient
+}
+
+type GoCThostFtdcTraderSpi struct {
+	Client GoCTPClient
+
 	tradingDate string
 }
 
-///判断接口内容为空
-func (p *GoCThostFtdcSpi) isEmpty(a interface{}) bool {
-	v := reflect.ValueOf(a)
-	if v.Kind() == reflect.Ptr {
-		v = v.Elem()
-	}
-	return v.Interface() == reflect.Zero(v.Type()).Interface()
-}
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//##########################################################################################################//
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///行情所需接口
 
 ///错误应答
-func (p *GoCThostFtdcSpi) OnRspError(pRspInfo goctp.CThostFtdcRspInfoField, nRequestID int, bIsLast bool) {
-	log.Println("GoCThostFtdcSpi.OnRspError.")
+func (p *GoCThostFtdcMdSpi) OnRspError(pRspInfo goctp.CThostFtdcRspInfoField, nRequestID int, bIsLast bool) {
+	log.Println("GoCThostFtdcMdSpi.OnRspError.")
 	p.IsErrorRspInfo(pRspInfo)
 }
 
@@ -59,25 +60,25 @@ func (p *GoCThostFtdcSpi) OnRspError(pRspInfo goctp.CThostFtdcRspInfoField, nReq
 ///        0x2001 接收心跳超时
 ///        0x2002 发送心跳失败
 ///        0x2003 收到错误报文
-func (p *GoCThostFtdcSpi) OnFrontDisconnected(nReason int) {
-	log.Printf("GoCThostFtdcSpi.OnFrontDisconnected: %#v\n", nReason)
+func (p *GoCThostFtdcMdSpi) OnFrontDisconnected(nReason int) {
+	log.Printf("GoCThostFtdcMdSpi.OnFrontDisconnected: %#v\n", nReason)
 }
 
 ///心跳超时警告。当长时间未收到报文时，该方法被调用。
 ///@param nTimeLapse 距离上次接收报文的时间
-func (p *GoCThostFtdcSpi) OnHeartBeatWarning(nTimeLapse int) {
-	log.Printf("GoCThostFtdcSpi.OnHeartBeatWarning: %v", nTimeLapse)
+func (p *GoCThostFtdcMdSpi) OnHeartBeatWarning(nTimeLapse int) {
+	log.Printf("GoCThostFtdcMdSpi.OnHeartBeatWarning: %v", nTimeLapse)
 }
 
 ///当客户端与交易后台建立起通信连接时（还未登录前），该方法被调用。
-func (p *GoCThostFtdcSpi) OnFrontConnected() {
-	log.Println("GoCThostFtdcSpi.OnFrontConnected.")
+func (p *GoCThostFtdcMdSpi) OnFrontConnected() {
+	log.Println("GoCThostFtdcMdSpi.OnFrontConnected.")
 	p.ReqUserLogin()
 }
 
 ///用户登录请求
-func (p *GoCThostFtdcSpi) ReqUserLogin() {
-	log.Println("GoCThostFtdcSpi.ReqUserLogin.")
+func (p *GoCThostFtdcMdSpi) ReqUserLogin() {
+	log.Println("GoCThostFtdcMdSpi.ReqUserLogin.")
 
 	req := goctp.NewCThostFtdcReqUserLoginField()
 	req.SetBrokerID(p.Client.BrokerID)
@@ -94,7 +95,7 @@ func (p *GoCThostFtdcSpi) ReqUserLogin() {
 }
 
 ///错误判断
-func (p *GoCThostFtdcSpi) IsErrorRspInfo(pRspInfo goctp.CThostFtdcRspInfoField) bool {
+func (p *GoCThostFtdcMdSpi) IsErrorRspInfo(pRspInfo goctp.CThostFtdcRspInfoField) bool {
 	// 如果ErrorID != 0, 说明收到了错误的响应
 	bResult := (pRspInfo.GetErrorID() != 0)
 	if bResult {
@@ -104,7 +105,7 @@ func (p *GoCThostFtdcSpi) IsErrorRspInfo(pRspInfo goctp.CThostFtdcRspInfoField) 
 }
 
 ///登录请求响应
-func (p *GoCThostFtdcSpi) OnRspUserLogin(pRspUserLogin goctp.CThostFtdcRspUserLoginField, pRspInfo goctp.CThostFtdcRspInfoField, nRequestID int, bIsLast bool) {
+func (p *GoCThostFtdcMdSpi) OnRspUserLogin(pRspUserLogin goctp.CThostFtdcRspUserLoginField, pRspInfo goctp.CThostFtdcRspInfoField, nRequestID int, bIsLast bool) {
 
 	if bIsLast && !p.IsErrorRspInfo(pRspInfo) {
 
@@ -120,7 +121,7 @@ func (p *GoCThostFtdcSpi) OnRspUserLogin(pRspUserLogin goctp.CThostFtdcRspUserLo
 }
 
 ///订阅行情
-func (p *GoCThostFtdcSpi) SubscribeMarketData(name []string) {
+func (p *GoCThostFtdcMdSpi) SubscribeMarketData(name []string) {
 
 	iResult := p.Client.MdApi.SubscribeMarketData(name)
 
@@ -132,7 +133,7 @@ func (p *GoCThostFtdcSpi) SubscribeMarketData(name []string) {
 }
 
 ///订阅询价
-func (p *GoCThostFtdcSpi) SubscribeForQuoteRsp(name []string) {
+func (p *GoCThostFtdcMdSpi) SubscribeForQuoteRsp(name []string) {
 
 	iResult := p.Client.MdApi.SubscribeForQuoteRsp(name)
 
@@ -144,33 +145,33 @@ func (p *GoCThostFtdcSpi) SubscribeForQuoteRsp(name []string) {
 }
 
 ///订阅行情应答
-func (p *GoCThostFtdcSpi) OnRspSubMarketData(pSpecificInstrument goctp.CThostFtdcSpecificInstrumentField, pRspInfo goctp.CThostFtdcRspInfoField, nRequestID int, bIsLast bool) {
-	log.Printf("GoCThostFtdcSpi.OnRspSubMarketData: %#v %#v %#v\n", pSpecificInstrument.GetInstrumentID(), nRequestID, bIsLast)
+func (p *GoCThostFtdcMdSpi) OnRspSubMarketData(pSpecificInstrument goctp.CThostFtdcSpecificInstrumentField, pRspInfo goctp.CThostFtdcRspInfoField, nRequestID int, bIsLast bool) {
+	log.Printf("GoCThostFtdcMdSpi.OnRspSubMarketData: %#v %#v %#v\n", pSpecificInstrument.GetInstrumentID(), nRequestID, bIsLast)
 	p.IsErrorRspInfo(pRspInfo)
 }
 
 ///订阅询价应答
-func (p *GoCThostFtdcSpi) OnRspSubForQuoteRsp(pSpecificInstrument goctp.CThostFtdcSpecificInstrumentField, pRspInfo goctp.CThostFtdcRspInfoField, nRequestID int, bIsLast bool) {
-	log.Printf("GoCThostFtdcSpi.OnRspSubForQuoteRsp: %#v %#v %#v\n", pSpecificInstrument.GetInstrumentID(), nRequestID, bIsLast)
+func (p *GoCThostFtdcMdSpi) OnRspSubForQuoteRsp(pSpecificInstrument goctp.CThostFtdcSpecificInstrumentField, pRspInfo goctp.CThostFtdcRspInfoField, nRequestID int, bIsLast bool) {
+	log.Printf("GoCThostFtdcMdSpi.OnRspSubForQuoteRsp: %#v %#v %#v\n", pSpecificInstrument.GetInstrumentID(), nRequestID, bIsLast)
 	p.IsErrorRspInfo(pRspInfo)
 }
 
 ///取消订阅行情应答
-func (p *GoCThostFtdcSpi) OnRspUnSubMarketData(pSpecificInstrument goctp.CThostFtdcSpecificInstrumentField, pRspInfo goctp.CThostFtdcRspInfoField, nRequestID int, bIsLast bool) {
-	log.Printf("GoCThostFtdcSpi.OnRspUnSubMarketData: %#v %#v %#v\n", pSpecificInstrument.GetInstrumentID(), nRequestID, bIsLast)
+func (p *GoCThostFtdcMdSpi) OnRspUnSubMarketData(pSpecificInstrument goctp.CThostFtdcSpecificInstrumentField, pRspInfo goctp.CThostFtdcRspInfoField, nRequestID int, bIsLast bool) {
+	log.Printf("GoCThostFtdcMdSpi.OnRspUnSubMarketData: %#v %#v %#v\n", pSpecificInstrument.GetInstrumentID(), nRequestID, bIsLast)
 	p.IsErrorRspInfo(pRspInfo)
 }
 
 ///取消订阅询价应答
-func (p *GoCThostFtdcSpi) OnRspUnSubForQuoteRsp(pSpecificInstrument goctp.CThostFtdcSpecificInstrumentField, pRspInfo goctp.CThostFtdcRspInfoField, nRequestID int, bIsLast bool) {
-	log.Printf("GoCThostFtdcSpi.OnRspUnSubForQuoteRsp: %#v %#v %#v\n", pSpecificInstrument.GetInstrumentID(), nRequestID, bIsLast)
+func (p *GoCThostFtdcMdSpi) OnRspUnSubForQuoteRsp(pSpecificInstrument goctp.CThostFtdcSpecificInstrumentField, pRspInfo goctp.CThostFtdcRspInfoField, nRequestID int, bIsLast bool) {
+	log.Printf("GoCThostFtdcMdSpi.OnRspUnSubForQuoteRsp: %#v %#v %#v\n", pSpecificInstrument.GetInstrumentID(), nRequestID, bIsLast)
 	p.IsErrorRspInfo(pRspInfo)
 }
 
 ///深度行情通知
-func (p *GoCThostFtdcSpi) OnRtnDepthMarketData(pDepthMarketData goctp.CThostFtdcDepthMarketDataField) {
+func (p *GoCThostFtdcMdSpi) OnRtnDepthMarketData(pDepthMarketData goctp.CThostFtdcDepthMarketDataField) {
 
-	log.Println("GoCThostFtdcSpi.OnRtnDepthMarketData: ", pDepthMarketData.GetTradingDay(), "\tInstrumentID: ",
+	log.Println("GoCThostFtdcMdSpi.OnRtnDepthMarketData: ", pDepthMarketData.GetTradingDay(), "\tInstrumentID: ",
 		pDepthMarketData.GetInstrumentID(), "\tExchangeID: ",
 		pDepthMarketData.GetExchangeID(), "\tExchangeInstID: ",
 		pDepthMarketData.GetExchangeInstID(), "\tLastPrice: ",
@@ -187,17 +188,54 @@ func (p *GoCThostFtdcSpi) OnRtnDepthMarketData(pDepthMarketData goctp.CThostFtdc
 }
 
 ///询价通知
-func (p *GoCThostFtdcSpi) OnRtnForQuoteRsp(pForQuoteRsp goctp.CThostFtdcForQuoteRspField) {
-	log.Printf("GoCThostFtdcSpi.OnRtnForQuoteRsp: %#v\n", pForQuoteRsp)
+func (p *GoCThostFtdcMdSpi) OnRtnForQuoteRsp(pForQuoteRsp goctp.CThostFtdcForQuoteRspField) {
+	log.Printf("GoCThostFtdcMdSpi.OnRtnForQuoteRsp: %#v\n", pForQuoteRsp)
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //##########################################################################################################//
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ///以下均为交易所需接口
+func (p *GoCThostFtdcTraderSpi) IsErrorRspInfo(pRspInfo goctp.CThostFtdcRspInfoField) bool {
+
+	iResult := (pRspInfo.GetErrorID() != 0)
+
+	if iResult && pRspInfo.GetErrorID() != 0 {
+		log.Printf("ErrorID=%v ErrorMsg=%v\n", pRspInfo.GetErrorID(), pRspInfo.GetErrorMsg())
+	}
+	return iResult
+}
+
+///判断接口内容为空
+func (p *GoCThostFtdcTraderSpi) isEmpty(a interface{}) bool {
+	v := reflect.ValueOf(a)
+	if v.Kind() == reflect.Ptr {
+		v = v.Elem()
+	}
+	return v.Interface() == reflect.Zero(v.Type()).Interface()
+}
+
+func (p *GoCThostFtdcTraderSpi) OnRspError(pRspInfo goctp.CThostFtdcRspInfoField, nRequestID int, bIsLast bool) {
+	log.Println("GoCThostFtdcTraderSpi.OnRspError.")
+	p.IsErrorRspInfo(pRspInfo)
+}
+
+func (p *GoCThostFtdcTraderSpi) OnFrontDisconnected(nReason int) {
+	log.Printf("GoCThostFtdcTraderSpi.OnFrontDisconnected: %#v", nReason)
+}
+
+func (p *GoCThostFtdcTraderSpi) OnHeartBeatWarning(nTimeLapse int) {
+	log.Printf("GoCThostFtdcTraderSpi.OnHeartBeatWarning: %#v", nTimeLapse)
+}
+
+func (p *GoCThostFtdcTraderSpi) OnFrontConnected() {
+	log.Println("GoCThostFtdcTraderSpi.OnFrontConnected.")
+	p.ReqAuthenticate()
+}
+
 ///客户端认证
-func (p *GoCThostFtdcSpi) ReqAuthenticate() {
-	log.Println("GoCThostFtdcSpi.ReqAuthenticate.")
+func (p *GoCThostFtdcTraderSpi) ReqAuthenticate() {
+	log.Println("GoCThostFtdcTraderSpi.ReqAuthenticate.")
 
 	req := goctp.NewCThostFtdcReqAuthenticateField()
 	req.SetBrokerID(p.Client.BrokerID)
@@ -215,17 +253,49 @@ func (p *GoCThostFtdcSpi) ReqAuthenticate() {
 }
 
 ///客户端认证应答
-func (p *GoCThostFtdcSpi) OnRspAuthenticate(pRspAuthenticateField goctp.CThostFtdcRspAuthenticateField, pRspInfo goctp.CThostFtdcRspInfoField, nRequestID int, bIsLast bool) {
+func (p *GoCThostFtdcTraderSpi) OnRspAuthenticate(pRspAuthenticateField goctp.CThostFtdcRspAuthenticateField, pRspInfo goctp.CThostFtdcRspInfoField, nRequestID int, bIsLast bool) {
 
-	log.Println("GoCThostFtdcSpi.OnRspAuthenticate.")
+	log.Println("GoCThostFtdcTraderSpi.OnRspAuthenticate.")
 	if bIsLast && (p.isEmpty(pRspInfo) || !p.IsErrorRspInfo(pRspInfo)) {
 		log.Println("客户端认证成功")
 		p.ReqUserLogin()
 	}
 }
 
+func (p *GoCThostFtdcTraderSpi) ReqUserLogin() {
+	log.Println("GoCThostFtdcTraderSpi.ReqUserLogin.")
+
+	req := goctp.NewCThostFtdcReqUserLoginField()
+	req.SetBrokerID(p.Client.BrokerID)
+	req.SetUserID(p.Client.InvestorID)
+	req.SetPassword(p.Client.Password)
+
+	iResult := p.Client.TraderApi.ReqUserLogin(req, p.Client.GetTraderRequestID())
+
+	if iResult != 0 {
+		log.Println("发送用户登录请求: 失败.")
+	} else {
+		log.Println("发送用户登录请求: 成功.")
+	}
+}
+
+func (p *GoCThostFtdcTraderSpi) OnRspUserLogin(pRspUserLogin goctp.CThostFtdcRspUserLoginField, pRspInfo goctp.CThostFtdcRspInfoField, nRequestID int, bIsLast bool) {
+
+	log.Println("GoCThostFtdcTraderSpi.OnRspUserLogin.")
+	if p.isEmpty(pRspInfo) || !p.IsErrorRspInfo(pRspInfo) {
+		p.tradingDate = pRspUserLogin.GetTradingDay()
+		log.Printf("获取用户登录信息: %#v %#v %#v\n", pRspUserLogin.GetFrontID(), pRspUserLogin.GetSessionID(), pRspUserLogin.GetMaxOrderRef())
+
+		///投资者结算结果确认
+		if bIsLast {
+			p.ReqQrySettlementInfoConfirm()
+		}
+
+	}
+}
+
 ///请求查询结算单确认日期
-func (p *GoCThostFtdcSpi) ReqQrySettlementInfoConfirm() {
+func (p *GoCThostFtdcTraderSpi) ReqQrySettlementInfoConfirm() {
 	req := goctp.NewCThostFtdcQrySettlementInfoConfirmField()
 	req.SetBrokerID(p.Client.BrokerID)
 	req.SetInvestorID(p.Client.InvestorID)
@@ -242,8 +312,8 @@ func (p *GoCThostFtdcSpi) ReqQrySettlementInfoConfirm() {
 }
 
 ///结算单确认日期查询请求应答（若当日已查询过结算单则可以直接进行相关交易操作）
-func (p *GoCThostFtdcSpi) OnRspQrySettlementInfoConfirm(pSettlementInfoConfirm goctp.CThostFtdcSettlementInfoConfirmField, pRspInfo goctp.CThostFtdcRspInfoField, nRequestID int, bIsLast bool) {
-	log.Println("GoCThostFtdcSpi.OnRspQrySettlementInfoConfirm.")
+func (p *GoCThostFtdcTraderSpi) OnRspQrySettlementInfoConfirm(pSettlementInfoConfirm goctp.CThostFtdcSettlementInfoConfirmField, pRspInfo goctp.CThostFtdcRspInfoField, nRequestID int, bIsLast bool) {
+	log.Println("GoCThostFtdcTraderSpi.OnRspQrySettlementInfoConfirm.")
 	if bIsLast && (p.isEmpty(pRspInfo) || !p.IsErrorRspInfo(pRspInfo)) {
 		if !p.isEmpty(pSettlementInfoConfirm) {
 			log.Println(pSettlementInfoConfirm.GetConfirmDate())
@@ -264,7 +334,7 @@ func (p *GoCThostFtdcSpi) OnRspQrySettlementInfoConfirm(pSettlementInfoConfirm g
 				//p.ReqQryParkedOrder()
 				//p.ReqRemoveParkedOrder()
 				//p.ReqQryParkedOrderAction()
-				//p.ReqQryInstrument("IF1703")
+				//p.ReqQryInstrument("")
 				//p.ReqRemoveParkedOrder("           1")
 
 			}
@@ -276,7 +346,7 @@ func (p *GoCThostFtdcSpi) OnRspQrySettlementInfoConfirm(pSettlementInfoConfirm g
 }
 
 ///请求查询结算单
-func (p *GoCThostFtdcSpi) ReqQrySettlementInfo() {
+func (p *GoCThostFtdcTraderSpi) ReqQrySettlementInfo() {
 	req := goctp.NewCThostFtdcQrySettlementInfoField()
 	req.SetBrokerID(p.Client.BrokerID)
 	req.SetInvestorID(p.Client.InvestorID)
@@ -294,8 +364,8 @@ func (p *GoCThostFtdcSpi) ReqQrySettlementInfo() {
 }
 
 ///查询结算单请求应答
-func (p *GoCThostFtdcSpi) OnRspQrySettlementInfo(pSettlementInfo goctp.CThostFtdcSettlementInfoField, pRspInfo goctp.CThostFtdcRspInfoField, nRequestID int, bIsLast bool) {
-	log.Println("GoCThostFtdcSpi.OnRspQrySettlementInfo.")
+func (p *GoCThostFtdcTraderSpi) OnRspQrySettlementInfo(pSettlementInfo goctp.CThostFtdcSettlementInfoField, pRspInfo goctp.CThostFtdcRspInfoField, nRequestID int, bIsLast bool) {
+	log.Println("GoCThostFtdcTraderSpi.OnRspQrySettlementInfo.")
 	if p.isEmpty(pRspInfo) || !p.IsErrorRspInfo(pRspInfo) {
 		if !p.isEmpty(pSettlementInfo) {
 			log.Println("查询结算单")
@@ -308,7 +378,7 @@ func (p *GoCThostFtdcSpi) OnRspQrySettlementInfo(pSettlementInfo goctp.CThostFtd
 }
 
 ///投资者结算结果确认
-func (p *GoCThostFtdcSpi) ReqSettlementInfoConfirm() {
+func (p *GoCThostFtdcTraderSpi) ReqSettlementInfoConfirm() {
 	req := goctp.NewCThostFtdcSettlementInfoConfirmField()
 	req.SetBrokerID(p.Client.BrokerID)
 	req.SetInvestorID(p.Client.InvestorID)
@@ -322,8 +392,8 @@ func (p *GoCThostFtdcSpi) ReqSettlementInfoConfirm() {
 }
 
 ///投资者结算结果确认应答（之后便可执行想要的操作）
-func (p *GoCThostFtdcSpi) OnRspSettlementInfoConfirm(pSettlementInfoConfirm goctp.CThostFtdcSettlementInfoConfirmField, pRspInfo goctp.CThostFtdcRspInfoField, nRequestID int, bIsLast bool) {
-	log.Println("GoCThostFtdcSpi.OnRspSettlementInfoConfirm.")
+func (p *GoCThostFtdcTraderSpi) OnRspSettlementInfoConfirm(pSettlementInfoConfirm goctp.CThostFtdcSettlementInfoConfirmField, pRspInfo goctp.CThostFtdcRspInfoField, nRequestID int, bIsLast bool) {
+	log.Println("GoCThostFtdcTraderSpi.OnRspSettlementInfoConfirm.")
 	if p.isEmpty(pRspInfo) || !p.IsErrorRspInfo(pRspInfo) {
 		if !p.isEmpty(pSettlementInfoConfirm) {
 			log.Println("ConfirmTime: ", pSettlementInfoConfirm.GetConfirmTime())
@@ -338,7 +408,7 @@ func (p *GoCThostFtdcSpi) OnRspSettlementInfoConfirm(pSettlementInfoConfirm goct
 }
 
 ///p.ReqQryInvestorPosition("")空字符串表示查询全部持仓
-func (p *GoCThostFtdcSpi) ReqQryInvestorPosition(InstrumentID string) {
+func (p *GoCThostFtdcTraderSpi) ReqQryInvestorPosition(InstrumentID string) {
 	req := goctp.NewCThostFtdcQryInvestorPositionField()
 	req.SetBrokerID(p.Client.BrokerID)
 	req.SetInvestorID(p.Client.InvestorID)
@@ -356,8 +426,8 @@ func (p *GoCThostFtdcSpi) ReqQryInvestorPosition(InstrumentID string) {
 	}
 }
 
-func (p *GoCThostFtdcSpi) OnRspQryInvestorPosition(pInvestorPosition goctp.CThostFtdcInvestorPositionField, pRspInfo goctp.CThostFtdcRspInfoField, nRequestID int, bIsLast bool) {
-	log.Println("GoCThostFtdcSpi.OnRspQryInvestorPosition.")
+func (p *GoCThostFtdcTraderSpi) OnRspQryInvestorPosition(pInvestorPosition goctp.CThostFtdcInvestorPositionField, pRspInfo goctp.CThostFtdcRspInfoField, nRequestID int, bIsLast bool) {
+	log.Println("GoCThostFtdcTraderSpi.OnRspQryInvestorPosition.")
 
 	if p.isEmpty(pRspInfo) || !p.IsErrorRspInfo(pRspInfo) {
 		if !p.isEmpty(pInvestorPosition) {
@@ -373,7 +443,7 @@ func (p *GoCThostFtdcSpi) OnRspQryInvestorPosition(pInvestorPosition goctp.CThos
 }
 
 ///p.ReqQryInvestorPositionDetail("")空字符串表示查询全部持仓
-func (p *GoCThostFtdcSpi) ReqQryInvestorPositionDetail(InstrumentID string) {
+func (p *GoCThostFtdcTraderSpi) ReqQryInvestorPositionDetail(InstrumentID string) {
 	req := goctp.NewCThostFtdcQryInvestorPositionDetailField()
 	req.SetBrokerID(p.Client.BrokerID)
 	req.SetInvestorID(p.Client.InvestorID)
@@ -392,8 +462,8 @@ func (p *GoCThostFtdcSpi) ReqQryInvestorPositionDetail(InstrumentID string) {
 	}
 }
 
-func (p *GoCThostFtdcSpi) OnRspQryInvestorPositionDetail(pInvestorPosition goctp.CThostFtdcInvestorPositionDetailField, pRspInfo goctp.CThostFtdcRspInfoField, nRequestID int, bIsLast bool) {
-	log.Println("GoCThostFtdcSpi.OnRspQryInvestorPositionDetail.")
+func (p *GoCThostFtdcTraderSpi) OnRspQryInvestorPositionDetail(pInvestorPosition goctp.CThostFtdcInvestorPositionDetailField, pRspInfo goctp.CThostFtdcRspInfoField, nRequestID int, bIsLast bool) {
+	log.Println("GoCThostFtdcTraderSpi.OnRspQryInvestorPositionDetail.")
 
 	if p.isEmpty(pRspInfo) || !p.IsErrorRspInfo(pRspInfo) {
 		if !p.isEmpty(pInvestorPosition) {
@@ -408,7 +478,7 @@ func (p *GoCThostFtdcSpi) OnRspQryInvestorPositionDetail(pInvestorPosition goctp
 }
 
 //p.ReqQryInvestorPositionCombineDetail("")空字符串表示查询全部组合持仓
-func (p *GoCThostFtdcSpi) ReqQryInvestorPositionCombineDetail(CombInstrumentID string) {
+func (p *GoCThostFtdcTraderSpi) ReqQryInvestorPositionCombineDetail(CombInstrumentID string) {
 	req := goctp.NewCThostFtdcQryInvestorPositionCombineDetailField()
 	req.SetBrokerID(p.Client.BrokerID)
 	req.SetInvestorID(p.Client.InvestorID)
@@ -426,8 +496,8 @@ func (p *GoCThostFtdcSpi) ReqQryInvestorPositionCombineDetail(CombInstrumentID s
 	}
 }
 
-func (p *GoCThostFtdcSpi) OnRspQryInvestorPositionCombineDetail(pInvestorPosition goctp.CThostFtdcInvestorPositionCombineDetailField, pRspInfo goctp.CThostFtdcRspInfoField, nRequestID int, bIsLast bool) {
-	log.Println("GoCThostFtdcSpi.OnRspQryInvestorPositionCombineDetail.")
+func (p *GoCThostFtdcTraderSpi) OnRspQryInvestorPositionCombineDetail(pInvestorPosition goctp.CThostFtdcInvestorPositionCombineDetailField, pRspInfo goctp.CThostFtdcRspInfoField, nRequestID int, bIsLast bool) {
+	log.Println("GoCThostFtdcTraderSpi.OnRspQryInvestorPositionCombineDetail.")
 
 	if p.isEmpty(pRspInfo) || !p.IsErrorRspInfo(pRspInfo) {
 		if !p.isEmpty(pInvestorPosition) {
@@ -441,7 +511,7 @@ func (p *GoCThostFtdcSpi) OnRspQryInvestorPositionCombineDetail(pInvestorPositio
 }
 
 ///p.ReqQryInstrument("")空字符串表示查询全部合约
-func (p *GoCThostFtdcSpi) ReqQryInstrument(InstrumentID string) {
+func (p *GoCThostFtdcTraderSpi) ReqQryInstrument(InstrumentID string) {
 	req := goctp.NewCThostFtdcQryInstrumentField()
 	req.SetInstrumentID(InstrumentID)
 
@@ -458,11 +528,11 @@ func (p *GoCThostFtdcSpi) ReqQryInstrument(InstrumentID string) {
 	}
 }
 
-func (p *GoCThostFtdcSpi) OnRspQryInstrument(pInstrument goctp.CThostFtdcInstrumentField, pRspInfo goctp.CThostFtdcRspInfoField, nRequestID int, bIsLast bool) {
-	log.Println("GoCThostFtdcSpi.OnRspQryInstrument.")
+func (p *GoCThostFtdcTraderSpi) OnRspQryInstrument(pInstrument goctp.CThostFtdcInstrumentField, pRspInfo goctp.CThostFtdcRspInfoField, nRequestID int, bIsLast bool) {
+	log.Println("GoCThostFtdcTraderSpi.OnRspQryInstrument.")
 	if p.isEmpty(pRspInfo) || !p.IsErrorRspInfo(pRspInfo) {
 		if !p.isEmpty(pInstrument) {
-			log.Println("GoCThostFtdcSpi.OnRspQryInstrument: ", pInstrument.GetInstrumentID(), "#1", pInstrument.GetExchangeID(), "#2",
+			log.Println("GoCThostFtdcTraderSpi.OnRspQryInstrument: ", pInstrument.GetInstrumentID(), "#1", pInstrument.GetExchangeID(), "#2",
 				pInstrument.GetInstrumentName(), "#3", pInstrument.GetExchangeInstID(), "#4", pInstrument.GetProductID(), "#5", pInstrument.GetProductClass(),
 				pInstrument.GetDeliveryYear(), pInstrument.GetDeliveryMonth(), pInstrument.GetMaxMarketOrderVolume(), pInstrument.GetMinMarketOrderVolume(),
 				pInstrument.GetMaxLimitOrderVolume(), pInstrument.GetMinLimitOrderVolume(), pInstrument.GetVolumeMultiple(), pInstrument.GetPriceTick(),
@@ -474,7 +544,7 @@ func (p *GoCThostFtdcSpi) OnRspQryInstrument(pInstrument goctp.CThostFtdcInstrum
 }
 
 ///查询资金账户
-func (p *GoCThostFtdcSpi) ReqQryTradingAccount() {
+func (p *GoCThostFtdcTraderSpi) ReqQryTradingAccount() {
 	req := goctp.NewCThostFtdcQryTradingAccountField()
 	req.SetBrokerID(p.Client.BrokerID)
 	req.SetInvestorID(p.Client.InvestorID)
@@ -491,9 +561,9 @@ func (p *GoCThostFtdcSpi) ReqQryTradingAccount() {
 	}
 }
 
-func (p *GoCThostFtdcSpi) OnRspQryTradingAccount(pTradingAccount goctp.CThostFtdcTradingAccountField, pRspInfo goctp.CThostFtdcRspInfoField, nRequestID int, bIsLast bool) {
+func (p *GoCThostFtdcTraderSpi) OnRspQryTradingAccount(pTradingAccount goctp.CThostFtdcTradingAccountField, pRspInfo goctp.CThostFtdcRspInfoField, nRequestID int, bIsLast bool) {
 
-	log.Println("GoCThostFtdcSpi.OnRspQryTradingAccount.")
+	log.Println("GoCThostFtdcTraderSpi.OnRspQryTradingAccount.")
 
 	if p.isEmpty(pRspInfo) || !p.IsErrorRspInfo(pRspInfo) {
 		if !p.isEmpty(pTradingAccount) {
@@ -505,23 +575,23 @@ func (p *GoCThostFtdcSpi) OnRspQryTradingAccount(pTradingAccount goctp.CThostFtd
 }
 
 //插入报单
-func (p *GoCThostFtdcSpi) ReqOrderInsert() {
+func (p *GoCThostFtdcTraderSpi) ReqOrderInsert() {
 	req := goctp.NewCThostFtdcInputOrderField()
 	req.SetBrokerID(p.Client.BrokerID)
 	req.SetInvestorID(p.Client.InvestorID)
-	req.SetInstrumentID("FG705")
+	req.SetInstrumentID("IF1706")
 	req.SetDirection(goctp.THOST_FTDC_D_Buy)
 	req.SetCombOffsetFlag(string(goctp.THOST_FTDC_OF_Open))
 	req.SetCombHedgeFlag(string(goctp.THOST_FTDC_HF_Speculation))
 	req.SetVolumeTotalOriginal(1)
 	req.SetContingentCondition(goctp.THOST_FTDC_CC_Immediately)
 	req.SetVolumeCondition(goctp.THOST_FTDC_VC_AV)
-	req.SetMinVolume(1)
+	req.SetMinVolume(0)
 	req.SetForceCloseReason(goctp.THOST_FTDC_FCC_NotForceClose)
 	req.SetIsAutoSuspend(0)
 	req.SetUserForceClose(0)
 	req.SetOrderPriceType(goctp.THOST_FTDC_OPT_LimitPrice)
-	req.SetLimitPrice(1330.00)
+	req.SetLimitPrice(3300.00)
 	req.SetTimeCondition(goctp.THOST_FTDC_TC_GFD)
 
 	iResult := p.Client.TraderApi.ReqOrderInsert(req, p.Client.GetTraderRequestID())
@@ -533,24 +603,24 @@ func (p *GoCThostFtdcSpi) ReqOrderInsert() {
 	}
 }
 
-func (p *GoCThostFtdcSpi) OnRspOrderInsert(pInputOrder goctp.CThostFtdcInputOrderField, pRspInfo goctp.CThostFtdcRspInfoField, nRequestID int, bIsLast bool) {
-	log.Println("GoCThostFtdcSpi.OnRspOrderInsert.")
+func (p *GoCThostFtdcTraderSpi) OnRspOrderInsert(pInputOrder goctp.CThostFtdcInputOrderField, pRspInfo goctp.CThostFtdcRspInfoField, nRequestID int, bIsLast bool) {
+	log.Println("GoCThostFtdcTraderSpi.OnRspOrderInsert.")
 
 	if bIsLast && (p.isEmpty(pRspInfo) || !p.IsErrorRspInfo(pRspInfo)) {
 		log.Println(1)
 	}
 }
 
-func (p *GoCThostFtdcSpi) OnErrRtnOrderInsert(pInputOrder goctp.CThostFtdcInputOrderField, pRspInfo goctp.CThostFtdcRspInfoField) {
-	log.Println("GoCThostFtdcSpi.OnErrRtnOrderInsert.")
+func (p *GoCThostFtdcTraderSpi) OnErrRtnOrderInsert(pInputOrder goctp.CThostFtdcInputOrderField, pRspInfo goctp.CThostFtdcRspInfoField) {
+	log.Println("GoCThostFtdcTraderSpi.OnErrRtnOrderInsert.")
 
 	if !p.isEmpty(pRspInfo) && !p.IsErrorRspInfo(pRspInfo) {
 		log.Println(2)
 	}
 }
 
-func (p *GoCThostFtdcSpi) OnRtnOrder(pOrder goctp.CThostFtdcOrderField) {
-	log.Println("GoCThostFtdcSpi.OnRtnOrder.")
+func (p *GoCThostFtdcTraderSpi) OnRtnOrder(pOrder goctp.CThostFtdcOrderField) {
+	log.Println("GoCThostFtdcTraderSpi.OnRtnOrder.")
 	log.Println("CancelTime:", pOrder.GetCancelTime())
 	log.Println("交易所编号:", pOrder.GetExchangeID())
 	log.Println("合约代码:", pOrder.GetInstrumentID())
@@ -570,15 +640,15 @@ func (p *GoCThostFtdcSpi) OnRtnOrder(pOrder goctp.CThostFtdcOrderField) {
 	log.Println("序号:", pOrder.GetSequenceNo())
 }
 
-func (p *GoCThostFtdcSpi) OnRtnTrade(pTrade goctp.CThostFtdcTradeField) {
-	log.Println("GoCThostFtdcSpi.OnRtnTrade.")
+func (p *GoCThostFtdcTraderSpi) OnRtnTrade(pTrade goctp.CThostFtdcTradeField) {
+	log.Println("GoCThostFtdcTraderSpi.OnRtnTrade.")
 }
 
 //撤单
 //p.ReqOrderAction("CFFEX","       63288") 注意参数形式，直接p.ReqOrderAction("CFFEX","63288")会找不到订单
 //强烈建议直接通过GetExchangeID(),GetOrderSysID()来获取参数，以防止由于字符串不匹配导致的找不到订单问题
-func (p *GoCThostFtdcSpi) ReqOrderAction(ExchangeID string, OrderSysID string) {
-	log.Println("GoCThostFtdcSpi.ReqOrderAction.")
+func (p *GoCThostFtdcTraderSpi) ReqOrderAction(ExchangeID string, OrderSysID string) {
+	log.Println("GoCThostFtdcTraderSpi.ReqOrderAction.")
 	req := goctp.NewCThostFtdcInputOrderActionField()
 	req.SetBrokerID(p.Client.BrokerID)
 	req.SetInvestorID(p.Client.InvestorID)
@@ -595,16 +665,16 @@ func (p *GoCThostFtdcSpi) ReqOrderAction(ExchangeID string, OrderSysID string) {
 	}
 }
 
-func (p *GoCThostFtdcSpi) OnRspOrderAction(pInputOrderAction goctp.CThostFtdcInputOrderActionField, pRspInfo goctp.CThostFtdcRspInfoField, nRequestID int, bIsLast bool) {
-	log.Println("GoCThostFtdcSpi.OnRspOrderAction.")
+func (p *GoCThostFtdcTraderSpi) OnRspOrderAction(pInputOrderAction goctp.CThostFtdcInputOrderActionField, pRspInfo goctp.CThostFtdcRspInfoField, nRequestID int, bIsLast bool) {
+	log.Println("GoCThostFtdcTraderSpi.OnRspOrderAction.")
 
 	if p.isEmpty(pRspInfo) || !p.IsErrorRspInfo(pRspInfo) {
 		log.Println("1234")
 	}
 }
 
-func (p *GoCThostFtdcSpi) OnErrRtnOrderAction(pInputOrderAction goctp.CThostFtdcInputOrderActionField, pRspInfo goctp.CThostFtdcRspInfoField) {
-	log.Println("GoCThostFtdcSpi.OnErrRtnOrderInsert.")
+func (p *GoCThostFtdcTraderSpi) OnErrRtnOrderAction(pInputOrderAction goctp.CThostFtdcInputOrderActionField, pRspInfo goctp.CThostFtdcRspInfoField) {
+	log.Println("GoCThostFtdcTraderSpi.OnErrRtnOrderInsert.")
 
 	if p.isEmpty(pRspInfo) || !p.IsErrorRspInfo(pRspInfo) {
 		log.Println("2")
@@ -612,11 +682,11 @@ func (p *GoCThostFtdcSpi) OnErrRtnOrderAction(pInputOrderAction goctp.CThostFtdc
 }
 
 ///预埋单录入请求
-func (p *GoCThostFtdcSpi) ReqParkedOrderInsert() {
+func (p *GoCThostFtdcTraderSpi) ReqParkedOrderInsert() {
 	req := goctp.NewCThostFtdcParkedOrderField()
 	req.SetBrokerID(p.Client.BrokerID)
 	req.SetInvestorID(p.Client.InvestorID)
-	req.SetInstrumentID("jm1709")
+	req.SetInstrumentID("IF1703")
 	req.SetDirection(goctp.THOST_FTDC_D_Buy)
 	req.SetCombOffsetFlag(string(goctp.THOST_FTDC_OF_Open))
 	req.SetCombHedgeFlag(string(goctp.THOST_FTDC_HF_Speculation))
@@ -628,7 +698,7 @@ func (p *GoCThostFtdcSpi) ReqParkedOrderInsert() {
 	req.SetIsAutoSuspend(0)
 	req.SetUserForceClose(0)
 	req.SetOrderPriceType(goctp.THOST_FTDC_OPT_LimitPrice)
-	req.SetLimitPrice(1220.00)
+	req.SetLimitPrice(3412.00)
 	req.SetTimeCondition(goctp.THOST_FTDC_TC_GFD)
 
 	iResult := p.Client.TraderApi.ReqParkedOrderInsert(req, p.Client.GetTraderRequestID())
@@ -640,11 +710,11 @@ func (p *GoCThostFtdcSpi) ReqParkedOrderInsert() {
 	}
 }
 
-func (p *GoCThostFtdcSpi) OnRspParkedOrderInsert(pParkedOrder goctp.CThostFtdcParkedOrderField, pRspInfo goctp.CThostFtdcRspInfoField, nRequestID int, bIsLast bool) {
-	log.Println("GoCThostFtdcSpi.OnRspParkedOrderInsert.")
+func (p *GoCThostFtdcTraderSpi) OnRspParkedOrderInsert(pParkedOrder goctp.CThostFtdcParkedOrderField, pRspInfo goctp.CThostFtdcRspInfoField, nRequestID int, bIsLast bool) {
+	log.Println("GoCThostFtdcTraderSpi.OnRspParkedOrderInsert.")
 
 	if p.isEmpty(pRspInfo) || !p.IsErrorRspInfo(pRspInfo) {
-		log.Println("GoCThostFtdcSpi.OnRtnOrder.")
+		log.Println("GoCThostFtdcTraderSpi.OnRtnOrder.")
 		log.Println("交易所编号:", pParkedOrder.GetExchangeID())
 		log.Println("合约代码:", pParkedOrder.GetInstrumentID())
 		log.Println("报单引用:", pParkedOrder.GetOrderRef())
@@ -660,7 +730,7 @@ func (p *GoCThostFtdcSpi) OnRspParkedOrderInsert(pParkedOrder goctp.CThostFtdcPa
 ///预埋撤单
 //p.ReqParkedOrderAction("CFFEX","       63288","IF1709")注意参数形式，直接p.ReqParkedOrderAction("CFFEX","63288")会找不到订单
 //强烈建议直接通过GetExchangeID(),GetOrderSysID(),GetInstrumentID()来获取参数，以防止由于字符串不匹配导致的找不到订单问题
-func (p *GoCThostFtdcSpi) ReqParkedOrderAction(ExchangeID string, OrderSysID string, InstrumentID string) {
+func (p *GoCThostFtdcTraderSpi) ReqParkedOrderAction(ExchangeID string, OrderSysID string, InstrumentID string) {
 	req := goctp.NewCThostFtdcParkedOrderActionField()
 	req.SetBrokerID(p.Client.BrokerID)
 	req.SetInvestorID(p.Client.InvestorID)
@@ -678,8 +748,8 @@ func (p *GoCThostFtdcSpi) ReqParkedOrderAction(ExchangeID string, OrderSysID str
 	}
 }
 
-func (p *GoCThostFtdcSpi) OnRspParkedOrderAction(pParkedOrderAction goctp.CThostFtdcParkedOrderActionField, pRspInfo goctp.CThostFtdcRspInfoField, nRequestID int, bIsLast bool) {
-	log.Println("GoCThostFtdcSpi.OnRspParkedOrderAction.")
+func (p *GoCThostFtdcTraderSpi) OnRspParkedOrderAction(pParkedOrderAction goctp.CThostFtdcParkedOrderActionField, pRspInfo goctp.CThostFtdcRspInfoField, nRequestID int, bIsLast bool) {
+	log.Println("GoCThostFtdcTraderSpi.OnRspParkedOrderAction.")
 
 	if p.isEmpty(pRspInfo) || !p.IsErrorRspInfo(pRspInfo) {
 		log.Println("1")
@@ -690,7 +760,7 @@ func (p *GoCThostFtdcSpi) OnRspParkedOrderAction(pParkedOrderAction goctp.CThost
 }
 
 ///请求查询预埋单
-func (p *GoCThostFtdcSpi) ReqQryParkedOrder() {
+func (p *GoCThostFtdcTraderSpi) ReqQryParkedOrder() {
 	req := goctp.NewCThostFtdcQryParkedOrderField()
 	req.SetBrokerID(p.Client.BrokerID)
 	req.SetInvestorID(p.Client.InvestorID)
@@ -707,8 +777,8 @@ func (p *GoCThostFtdcSpi) ReqQryParkedOrder() {
 	}
 }
 
-func (p *GoCThostFtdcSpi) OnRspQryParkedOrder(pInvestorPosition goctp.CThostFtdcParkedOrderField, pRspInfo goctp.CThostFtdcRspInfoField, nRequestID int, bIsLast bool) {
-	log.Println("GoCThostFtdcSpi.OnRspQryParkedOrder.")
+func (p *GoCThostFtdcTraderSpi) OnRspQryParkedOrder(pInvestorPosition goctp.CThostFtdcParkedOrderField, pRspInfo goctp.CThostFtdcRspInfoField, nRequestID int, bIsLast bool) {
+	log.Println("GoCThostFtdcTraderSpi.OnRspQryParkedOrder.")
 
 	if p.isEmpty(pRspInfo) || !p.IsErrorRspInfo(pRspInfo) {
 		if !p.isEmpty(pInvestorPosition) {
@@ -723,7 +793,7 @@ func (p *GoCThostFtdcSpi) OnRspQryParkedOrder(pInvestorPosition goctp.CThostFtdc
 }
 
 ///请求查询预埋撤单
-func (p *GoCThostFtdcSpi) ReqQryParkedOrderAction() {
+func (p *GoCThostFtdcTraderSpi) ReqQryParkedOrderAction() {
 	req := goctp.NewCThostFtdcQryParkedOrderActionField()
 	req.SetBrokerID(p.Client.BrokerID)
 	req.SetInvestorID(p.Client.InvestorID)
@@ -741,8 +811,8 @@ func (p *GoCThostFtdcSpi) ReqQryParkedOrderAction() {
 	}
 }
 
-func (p *GoCThostFtdcSpi) OnRspQryParkedOrderAction(pInvestorPosition goctp.CThostFtdcParkedOrderActionField, pRspInfo goctp.CThostFtdcRspInfoField, nRequestID int, bIsLast bool) {
-	log.Println("GoCThostFtdcSpi.OnRspQryParkedOrderAction.")
+func (p *GoCThostFtdcTraderSpi) OnRspQryParkedOrderAction(pInvestorPosition goctp.CThostFtdcParkedOrderActionField, pRspInfo goctp.CThostFtdcRspInfoField, nRequestID int, bIsLast bool) {
+	log.Println("GoCThostFtdcTraderSpi.OnRspQryParkedOrderAction.")
 
 	if p.isEmpty(pRspInfo) || !p.IsErrorRspInfo(pRspInfo) {
 		if !p.isEmpty(pInvestorPosition) {
@@ -758,7 +828,7 @@ func (p *GoCThostFtdcSpi) OnRspQryParkedOrderAction(pInvestorPosition goctp.CTho
 
 ///请求删除预埋单
 //强烈建议直接通过GetOParkedOrderID()来获取参数，以防止由于字符串不匹配导致的找不到订单问题
-func (p *GoCThostFtdcSpi) ReqRemoveParkedOrder(ParkedOrderID string) {
+func (p *GoCThostFtdcTraderSpi) ReqRemoveParkedOrder(ParkedOrderID string) {
 	req := goctp.NewCThostFtdcRemoveParkedOrderField()
 	req.SetBrokerID(p.Client.BrokerID)
 	req.SetInvestorID(p.Client.InvestorID)
@@ -776,8 +846,8 @@ func (p *GoCThostFtdcSpi) ReqRemoveParkedOrder(ParkedOrderID string) {
 	}
 }
 
-func (p *GoCThostFtdcSpi) OnRspRemoveParkedOrder(pRemoveParkedOrder goctp.CThostFtdcRemoveParkedOrderField, pRspInfo goctp.CThostFtdcRspInfoField, nRequestID int, bIsLast bool) {
-	log.Println("GoCThostFtdcSpi.OnRspRemoveParkedOrder.")
+func (p *GoCThostFtdcTraderSpi) OnRspRemoveParkedOrder(pRemoveParkedOrder goctp.CThostFtdcRemoveParkedOrderField, pRspInfo goctp.CThostFtdcRspInfoField, nRequestID int, bIsLast bool) {
+	log.Println("GoCThostFtdcTraderSpi.OnRspRemoveParkedOrder.")
 
 	if !p.isEmpty(pRspInfo) || !p.IsErrorRspInfo(pRspInfo) {
 		if !p.isEmpty(pRemoveParkedOrder) {
@@ -788,7 +858,7 @@ func (p *GoCThostFtdcSpi) OnRspRemoveParkedOrder(pRemoveParkedOrder goctp.CThost
 }
 
 //请求删除预埋撤单
-func (p *GoCThostFtdcSpi) ReqRemoveParkedOrderAction(ParkedOrderActionID string) {
+func (p *GoCThostFtdcTraderSpi) ReqRemoveParkedOrderAction(ParkedOrderActionID string) {
 	req := goctp.NewCThostFtdcRemoveParkedOrderActionField()
 	req.SetBrokerID(p.Client.BrokerID)
 	req.SetInvestorID(p.Client.InvestorID)
@@ -807,8 +877,8 @@ func (p *GoCThostFtdcSpi) ReqRemoveParkedOrderAction(ParkedOrderActionID string)
 	}
 }
 
-func (p *GoCThostFtdcSpi) OnRspRemoveParkedOrderAction(pRemoveParkedOrderAction goctp.CThostFtdcRemoveParkedOrderActionField, pRspInfo goctp.CThostFtdcRspInfoField, nRequestID int, bIsLast bool) {
-	log.Println("GoCThostFtdcSpi.OnRspRemoveParkedOrderAction.")
+func (p *GoCThostFtdcTraderSpi) OnRspRemoveParkedOrderAction(pRemoveParkedOrderAction goctp.CThostFtdcRemoveParkedOrderActionField, pRspInfo goctp.CThostFtdcRspInfoField, nRequestID int, bIsLast bool) {
+	log.Println("GoCThostFtdcTraderSpi.OnRspRemoveParkedOrderAction.")
 
 	if bIsLast && (p.isEmpty(pRspInfo) || !p.IsErrorRspInfo(pRspInfo)) {
 		if !p.isEmpty(pRemoveParkedOrderAction) {
@@ -818,7 +888,7 @@ func (p *GoCThostFtdcSpi) OnRspRemoveParkedOrderAction(pRemoveParkedOrderAction 
 	}
 }
 
-func (p *GoCThostFtdcSpi) ReqQryOrder() {
+func (p *GoCThostFtdcTraderSpi) ReqQryOrder() {
 	req := goctp.NewCThostFtdcQryOrderField()
 	req.SetBrokerID(p.Client.BrokerID)
 	req.SetInvestorID(p.Client.InvestorID)
@@ -837,9 +907,9 @@ func (p *GoCThostFtdcSpi) ReqQryOrder() {
 }
 
 ///请求查询报单
-func (p *GoCThostFtdcSpi) OnRspQryOrder(pOrder goctp.CThostFtdcOrderField, pRspInfo goctp.CThostFtdcRspInfoField, nRequestID int, bIsLast bool) {
+func (p *GoCThostFtdcTraderSpi) OnRspQryOrder(pOrder goctp.CThostFtdcOrderField, pRspInfo goctp.CThostFtdcRspInfoField, nRequestID int, bIsLast bool) {
 
-	log.Println("GoCThostFtdcSpi.OnRspQryOrder.")
+	log.Println("GoCThostFtdcTraderSpi.OnRspQryOrder.")
 
 	if p.isEmpty(pRspInfo) || !p.IsErrorRspInfo(pRspInfo) {
 		if !p.isEmpty(pOrder) {
